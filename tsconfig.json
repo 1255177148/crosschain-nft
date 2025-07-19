@@ -6,7 +6,21 @@
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "paths": { // 如果你在项目中使用路径别名，可以配置这里
+      "@*": [
+        "./node_modules/*"
+      ]
+    }
   },
-  "include": ["scripts", "hardhat.config.ts", "deploy"]
+    "include": [
+      "scripts",
+      "test",
+      "typechain",
+      "deploy",
+      "hardhat.config.ts"
+    ],
+    "exclude": [
+      "node_modules"
+    ]
 }

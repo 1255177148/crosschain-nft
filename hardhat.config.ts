@@ -16,6 +16,12 @@ const PRIVATE_KEY_2: any = process.env.PRIVATE_KEY_2;
 const ETHERSCAN_API_KEY: any = process.env.ETHERSCAN_API_KEY;
 const config: HardhatUserConfig = {
   solidity: "0.8.28",
+  paths: {
+    sources: "./contracts",
+    tests: "./test",
+    cache: "./cache",
+    artifacts: "./artifacts"
+  },
   // 配置网络
   // defaultNetwork: "sepolia",// 设置默认网络为 Sepolia
   // 这里可以配置多个网络

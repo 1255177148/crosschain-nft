@@ -79,6 +79,7 @@ contract NFTPoolLockAndRelease is CCIPReceiver, OwnerIsCreator {
         uint64 chainSelector,
         address receiver
     ) public returns (bytes32) {
+        nft.approve(address(this), _tokenId);// 授权当前合约可以将指定的tokenid转移到当前合约池里
         // 把NFT转移到当前合约并锁定
         nft.transferFrom(msg.sender, address(this), _tokenId);
         bytes memory payload = abi.encode(_tokenId, newOwner);
