@@ -95,6 +95,5 @@ contract MyToken is
     modifier OnlyWhitelisted() {
         require(whitelist[msg.sender], "Not whitelisted");
         _;
-        
     }
 }
