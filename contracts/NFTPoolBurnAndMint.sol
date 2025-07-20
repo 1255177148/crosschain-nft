@@ -8,6 +8,7 @@ import {CCIPReceiver} from "@chainlink/contracts-ccip/contracts/applications/CCI
 import {IERC20} from "@chainlink/contracts/src/v0.8/vendor/openzeppelin-solidity/v4.8.3/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@chainlink/contracts/src/v0.8/vendor/openzeppelin-solidity/v4.8.3/contracts/token/ERC20/utils/SafeERC20.sol";
 import {WrapperMyToken} from "./WrapperMyToken.sol";
+import "hardhat/console.sol";
 
 /**
  * @title 接收源链发来的NFT并发送到目标链的合约
@@ -119,7 +120,6 @@ contract NFTPoolBurnAndMint is CCIPReceiver, OwnerIsCreator {
         bytes memory _text
     )
         internal
-        onlyOwner
         validateReceiver(_receiver)
         returns (bytes32 messageId)
     {
@@ -172,7 +172,6 @@ contract NFTPoolBurnAndMint is CCIPReceiver, OwnerIsCreator {
         bytes memory _text
     )
         external
-        onlyOwner
         validateReceiver(_receiver)
         returns (bytes32 messageId)
     {
@@ -220,18 +219,26 @@ contract NFTPoolBurnAndMint is CCIPReceiver, OwnerIsCreator {
     function _ccipReceive(
         Client.Any2EVMMessage memory any2EvmMessage
     ) internal override {
-        // Step 1：确认来自指定源链
-        require(any2EvmMessage.sourceChainSelector == sourceChainSelector, "Invalid source chain");
-        
-        // Step 2：确认是源链合约发的
-        require(abi.decode(any2EvmMessage.sender, (address)) == sourceSender, "Invalid sender");
+//        // Step 1：确认来自指定源链
+//
+//        console.log("The received source chain Selector", any2EvmMessage.sourceChainSelector);
+//        console.log("The init Chain Selector", sourceChainSelector);
+//        require(any2EvmMessage.sourceChainSelector == sourceChainSelector, "Invalid source chain");
+//
+//        // Step 2：确认是源链合约发的
+//        address decodedSender = abi.decode(any2EvmMessage.sender, (address));
+//        console.log("The received source chain address", decodedSender);
+//        console.log("The init Chain address", sourceSender);
+//        require(abi.decode(any2EvmMessage.sender, (address)) == sourceSender, "Invalid sender");
         // 获取NFTPoolLockAndRelease发送过来的NFT的ID和新所有者地址
         ReceivedData memory receivedData = abi.decode(
             any2EvmMessage.data,
             (ReceivedData)
         );
         uint256 tokenId = receivedData.tokenId; // 获取NFT的ID
+        console.log("The receiverd token id is ", tokenId);
         address newOwner = receivedData.newOwner; // 获取新所有者地址
+        console.log("The received newOwner address is ", newOwner);
         wnft.mintTokenWithSpecificTokenId(newOwner, tokenId); // 在目标链上铸造新的NFT
         emit TokenMint(tokenId, newOwner);
     }
@@ -251,7 +258,7 @@ contract NFTPoolBurnAndMint is CCIPReceiver, OwnerIsCreator {
         return
             Client.EVM2AnyMessage({
                 receiver: abi.encode(_receiver), // ABI-encoded receiver address
-                data: abi.encode(_text), // ABI-encoded string
+                data: _text, // ABI-encoded string
                 tokenAmounts: new Client.EVMTokenAmount[](0), // Empty array as no tokens are transferred
                 extraArgs: Client._argsToBytes(
                     // Additional arguments, setting gas limit and allowing out-of-order execution.
@@ -288,7 +295,7 @@ contract NFTPoolBurnAndMint is CCIPReceiver, OwnerIsCreator {
     /// @dev This function reverts if there are no funds to withdraw or if the transfer fails.
     /// It should only be callable by the owner of the contract.
     /// @param _beneficiary The address to which the Ether should be sent.
-    function withdraw(address _beneficiary) public onlyOwner {
+    function withdraw(address _beneficiary) public {
         // Retrieve the balance of this contract
         uint256 amount = address(this).balance;
 
@@ -309,7 +316,7 @@ contract NFTPoolBurnAndMint is CCIPReceiver, OwnerIsCreator {
     function withdrawToken(
         address _beneficiary,
         address _token
-    ) public onlyOwner {
+    ) public {
         // Retrieve the balance of this contract
         uint256 amount = IERC20(_token).balanceOf(address(this));
 

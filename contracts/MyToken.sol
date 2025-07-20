@@ -7,6 +7,7 @@ import {ERC721Burnable} from "@openzeppelin/contracts/token/ERC721/extensions/ER
 import {ERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import "hardhat/console.sol";
 
 contract MyToken is
     ERC721,
@@ -93,6 +94,7 @@ contract MyToken is
     }
 
     modifier OnlyWhitelisted() {
+        console.log("sender address:", msg.sender);
         require(whitelist[msg.sender], "Not whitelisted");
         _;
     }

@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IRouterClient} from "@chainlink/contracts-ccip/contracts/interfaces/IRouterClient.sol";
-import {OwnerIsCreator} from "@chainlink/contracts/src/v0.8/shared/access/OwnerIsCreator.sol";
+import {CCIPReceiver} from "@chainlink/contracts-ccip/contracts/applications/CCIPReceiver.sol";
 import {Client} from "@chainlink/contracts-ccip/contracts/libraries/Client.sol";
 import {CCIPReceiver} from "@chainlink/contracts-ccip/contracts/applications/CCIPReceiver.sol";
 import {IERC20} from "@chainlink/contracts/src/v0.8/vendor/openzeppelin-solidity/v4.8.3/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@chainlink/contracts/src/v0.8/vendor/openzeppelin-solidity/v4.8.3/contracts/token/ERC20/utils/SafeERC20.sol";
-import {MyToken} from "./MyToken.sol"; // Assuming MyToken is the NFT contract you are locking
+import {IRouterClient} from "@chainlink/contracts-ccip/contracts/interfaces/IRouterClient.sol";
+import {MyToken} from "./MyToken.sol";
+import {OwnerIsCreator} from "@chainlink/contracts/src/v0.8/shared/access/OwnerIsCreator.sol";
+import {SafeERC20} from "@chainlink/contracts/src/v0.8/vendor/openzeppelin-solidity/v4.8.3/contracts/token/ERC20/utils/SafeERC20.sol"; // Assuming MyToken is the NFT contract you are locking
 
 /**
  * @title 将源链合约里的NFT锁定并发送到目标链的合约
@@ -79,7 +80,6 @@ contract NFTPoolLockAndRelease is CCIPReceiver, OwnerIsCreator {
         uint64 chainSelector,
         address receiver
     ) public returns (bytes32) {
-        nft.approve(address(this), _tokenId);// 授权当前合约可以将指定的tokenid转移到当前合约池里
         // 把NFT转移到当前合约并锁定
         nft.transferFrom(msg.sender, address(this), _tokenId);
         bytes memory payload = abi.encode(_tokenId, newOwner);
@@ -105,10 +105,9 @@ contract NFTPoolLockAndRelease is CCIPReceiver, OwnerIsCreator {
         address _receiver,
         bytes memory _text
     )
-        internal
-        onlyOwner
-        validateReceiver(_receiver)
-        returns (bytes32 messageId)
+    internal
+    validateReceiver(_receiver)
+    returns (bytes32 messageId)
     {
         // Create an EVM2AnyMessage struct in memory with necessary information for sending a cross-chain message
         Client.EVM2AnyMessage memory evm2AnyMessage = _buildCCIPMessage(
@@ -158,10 +157,9 @@ contract NFTPoolLockAndRelease is CCIPReceiver, OwnerIsCreator {
         address _receiver,
         bytes memory _text
     )
-        external
-        onlyOwner
-        validateReceiver(_receiver)
-        returns (bytes32 messageId)
+    external
+    validateReceiver(_receiver)
+    returns (bytes32 messageId)
     {
         // Create an EVM2AnyMessage struct in memory with necessary information for sending a cross-chain message
         Client.EVM2AnyMessage memory evm2AnyMessage = _buildCCIPMessage(
@@ -228,22 +226,22 @@ contract NFTPoolLockAndRelease is CCIPReceiver, OwnerIsCreator {
         // Create an EVM2AnyMessage struct in memory with necessary information for sending a cross-chain message
         return
             Client.EVM2AnyMessage({
-                receiver: abi.encode(_receiver), // ABI-encoded receiver address
-                data: abi.encode(_text), // ABI-encoded string
-                tokenAmounts: new Client.EVMTokenAmount[](0), // Empty array as no tokens are transferred
-                extraArgs: Client._argsToBytes(
-                    // Additional arguments, setting gas limit and allowing out-of-order execution.
-                    // Best Practice: For simplicity, the values are hardcoded. It is advisable to use a more dynamic approach
-                    // where you set the extra arguments off-chain. This allows adaptation depending on the lanes, messages,
-                    // and ensures compatibility with future CCIP upgrades. Read more about it here: https://docs.chain.link/ccip/concepts/best-practices/evm#using-extraargs
-                    Client.GenericExtraArgsV2({
-                        gasLimit: 200_000, // Gas limit for the callback on the destination chain
-                        allowOutOfOrderExecution: true // Allows the message to be executed out of order relative to other messages from the same sender
-                    })
-                ),
-                // Set the feeToken to a feeTokenAddress, indicating specific asset will be used for fees
-                feeToken: _feeTokenAddress
-            });
+            receiver: abi.encode(_receiver), // ABI-encoded receiver address
+            data: _text, // ABI-encoded string
+            tokenAmounts: new Client.EVMTokenAmount[](0), // Empty array as no tokens are transferred
+            extraArgs: Client._argsToBytes(
+        // Additional arguments, setting gas limit and allowing out-of-order execution.
+        // Best Practice: For simplicity, the values are hardcoded. It is advisable to use a more dynamic approach
+        // where you set the extra arguments off-chain. This allows adaptation depending on the lanes, messages,
+        // and ensures compatibility with future CCIP upgrades. Read more about it here: https://docs.chain.link/ccip/concepts/best-practices/evm#using-extraargs
+                Client.GenericExtraArgsV2({
+                    gasLimit: 200_000, // Gas limit for the callback on the destination chain
+                    allowOutOfOrderExecution: true // Allows the message to be executed out of order relative to other messages from the same sender
+                })
+            ),
+        // Set the feeToken to a feeTokenAddress, indicating specific asset will be used for fees
+            feeToken: _feeTokenAddress
+        });
     }
 
     /// @notice Fallback function to allow the contract to receive Ether.
@@ -255,7 +253,7 @@ contract NFTPoolLockAndRelease is CCIPReceiver, OwnerIsCreator {
     /// @dev This function reverts if there are no funds to withdraw or if the transfer fails.
     /// It should only be callable by the owner of the contract.
     /// @param _beneficiary The address to which the Ether should be sent.
-    function withdraw(address _beneficiary) public onlyOwner {
+    function withdraw(address _beneficiary) public {
         // Retrieve the balance of this contract
         uint256 amount = address(this).balance;
 
@@ -263,7 +261,7 @@ contract NFTPoolLockAndRelease is CCIPReceiver, OwnerIsCreator {
         if (amount == 0) revert NothingToWithdraw();
 
         // Attempt to send the funds, capturing the success status and discarding any return data
-        (bool sent, ) = _beneficiary.call{value: amount}("");
+        (bool sent,) = _beneficiary.call{value: amount}("");
 
         // Revert if the send failed, with information about the attempted transfer
         if (!sent) revert FailedToWithdrawEth(msg.sender, _beneficiary, amount);
@@ -276,7 +274,7 @@ contract NFTPoolLockAndRelease is CCIPReceiver, OwnerIsCreator {
     function withdrawToken(
         address _beneficiary,
         address _token
-    ) public onlyOwner {
+    ) public {
         // Retrieve the balance of this contract
         uint256 amount = IERC20(_token).balanceOf(address(this));
 

@@ -15,7 +15,7 @@ const deployNFTPoolBurnAndMint: DeployFunction = async (hre: HardhatRuntimeEnvir
     const destinationRouter = ccipConfig.destinationRouter_;// 获取目的链路由地址
     const linkTokenAddr = ccipConfig.linkToken_;// 获取 LINK 代币地址
     const wnftAddress = await deployments.get("WrapperMyToken").then(deployment => deployment.address); // 获取 MyToken 合约地址
-    const nftAddress = await deployments.get("MyToken").then(deployment => deployment.address); // 获取 MyToken 合约地址
+    const nftAddress = await deployments.get("NFTPoolLockAndRelease").then(deployment => deployment.address); // 获取 MyToken 合约地址
     const chainSelector = ccipConfig.chainSelector_;// 获取链选择器
     const args = [destinationRouter, linkTokenAddr, wnftAddress, nftAddress, chainSelector]; // 传入合约的构造函数参数
     const NFTPoolBurnAndMint = await deploy("NFTPoolBurnAndMint", {

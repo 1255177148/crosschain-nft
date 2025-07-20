@@ -1,4 +1,3 @@
-import { CCIPLocalSimulator } from './../typechain-types/@chainlink/local/src/ccip/CCIPLocalSimulator';
 import "@nomicfoundation/hardhat-toolbox";
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
@@ -11,7 +10,7 @@ const deployPoolLockAndRelease: DeployFunction = async (hre: HardhatRuntimeEnvir
         network.name !== "hardhat" && network.name !== "localhost";
     log("Deploying NFTPoolLockAndRelease and waiting for confirmations...");
     console.log("当前网络:", network.name);
-    console.log("当前部署记录文件夹:", deployments.getNetworkName && await deployments.getNetworkName());
+    console.log("当前部署记录文件夹:", deployments.getNetworkName && deployments.getNetworkName());
 
     const allDeployments = await deployments.all();
     console.log("当前已部署合约:", Object.keys(allDeployments));
