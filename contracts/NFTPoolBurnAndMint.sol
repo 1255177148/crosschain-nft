@@ -92,8 +92,6 @@ contract NFTPoolBurnAndMint is CCIPReceiver, OwnerIsCreator {
         uint64 chainSelector,
         address receiver
     ) public returns (bytes32) {
-        // 把NFT转移到当前合约并锁定
-        wnft.transferFrom(msg.sender, address(this), _tokenId);
         wnft.burn(_tokenId); // 销毁NFT
         // 发送跨链数据到源链，解锁源链的NFT
         bytes memory payload = abi.encode(_tokenId, newOwner);

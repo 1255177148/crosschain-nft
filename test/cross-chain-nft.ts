@@ -36,7 +36,7 @@ before(async () => {
 });
 
 describe(
-    "Cross-Chain NFT Tests",
+    "测试从源链到目标链的跨链转移NFT流程",
     async () => {
         // 测试用户mint一个nft
         it("测试用户mint一个nft", async () => {
@@ -51,33 +51,41 @@ describe(
             const tokenOwner = await myToken.ownerOf(tokenId);
             expect(tokenOwner).to.equal(deployer);
         })
+
+        it("测试用户锁定一个nft并发送跨链消息", async () => {
+            // token的持有者owner需要先授权nftPoolLockAndRelease合约可以将token从owner转移到nftPoolLockAndRelease合约中
+            await myToken.approve(nftPoolLockAndRelease.target, 0);
+            // 从水龙头那里获取link
+            await ccipLocalSimulator.requestLinkFromFaucet(nftPoolLockAndRelease, ethers.parseEther("10"));
+            // 加上白名单，只有白名单里的地址才能mint一个nft
+            await wrapperMyToken.addToWhitelist(nftPoolBurnAndMint.target);
+            await nftPoolLockAndRelease.lockAndSendNFT(0, deployer, chainSelector, nftPoolBurnAndMint.target);
+            const owner = await myToken.ownerOf(0);
+            console.log("test");
+            // 判断tokenId为0的拥有者address是否为nftPoolLockAndRelease合约地址，是的话，就说明nft已经转移到了pool里面了
+            expect(owner).to.equal(nftPoolLockAndRelease.target);
+        })
+
+        it('测试用户在目标链上接收并mint一个wnft', async () => {
+            const owner = await wrapperMyToken.ownerOf(0);
+            // 判断wnft的tokenId为0的拥有者address是否为跨链传递的owner
+            expect(owner).to.equal(deployer);
+        })
     }
 )
 
-describe("测试用户锁定一个nft并发送跨链消息", async () => {
-    it("测试用户锁定一个nft并发送跨链消息", async () => {
-        // token的持有者owner需要先授权nftPoolLockAndRelease合约可以将token从owner转移到nftPoolLockAndRelease合约中
-        await myToken.approve(nftPoolLockAndRelease.target, 0);
-        // 从水龙头那里获取link
-        await ccipLocalSimulator.requestLinkFromFaucet(nftPoolLockAndRelease, ethers.parseEther("10"));
-        await wrapperMyToken.addToWhitelist(nftPoolBurnAndMint.target);// 加上白名单，只有白名单里的地址才能mint一个nft
-        await nftPoolLockAndRelease.lockAndSendNFT(0, deployer, chainSelector, nftPoolBurnAndMint.target);
-        const owner = await myToken.ownerOf(0);
-        console.log("test");
-        // 判断tokenId为0的拥有者address是否为nftPoolLockAndRelease合约地址，是的话，就说明nft已经转移到了pool里面了
-        expect(owner).to.equal(nftPoolLockAndRelease.target);
+describe("测试用户从目标链到源链的跨链NFT流程", async () => {
+    it('测试用户burn一个wnft并发送跨链消息到源链', async () => {
+        // 给nftPoolBurnAndMint合约授权可以操作token id为0的nft
+        await wrapperMyToken.approve(nftPoolBurnAndMint.target, 0);
+        await nftPoolBurnAndMint.burnAndSendNFT(0, deployer, chainSelector, nftPoolLockAndRelease.target);
+        const amount = await wrapperMyToken.totalSupply();
+        expect(amount).to.equal(0);
     })
-})
 
-describe("测试用户在目标链上接收并mint一个wnft", async () => {
-    it('测试用户在目标链上接收并mint一个wnft', async () => {
-        const owner = await wrapperMyToken.ownerOf(0);
+    it("测试用户在源链上接收并解锁一个nft", async () => {
+        const owner = await myToken.ownerOf(0);
         // 判断wnft的tokenId为0的拥有者address是否为跨链传递的owner
         expect(owner).to.equal(deployer);
-    });
+    })
 })
-
-
-// 测试用户从目标链到源链的跨链NFT流程
-// 测试用户burn一个wnft并发送跨链消息到源链
-// 测试用户在源链上接收并解锁一个nft
