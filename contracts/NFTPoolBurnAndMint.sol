@@ -46,6 +46,7 @@ contract NFTPoolBurnAndMint is CCIPReceiver, OwnerIsCreator {
 
     bytes32 private s_lastReceivedMessageId; // Store the last received messageId.
     string private s_lastReceivedText; // Store the last received text.
+    address public myOwner;
 
     IERC20 private s_linkToken;
     WrapperMyToken public wnft;
@@ -63,12 +64,11 @@ contract NFTPoolBurnAndMint is CCIPReceiver, OwnerIsCreator {
         address _router,
         address _link,
         address _nft,
-        address _sourceSender,
         uint64 _sourceChainSelector
     ) CCIPReceiver(_router) {
+        myOwner = msg.sender;
         s_linkToken = IERC20(_link);
         wnft = WrapperMyToken(_nft);
-        sourceSender = _sourceSender; // 源链的发送合约地址
         sourceChainSelector = _sourceChainSelector;
     }
 
@@ -210,6 +210,13 @@ contract NFTPoolBurnAndMint is CCIPReceiver, OwnerIsCreator {
     }
 
     /**
+    设置下源链发送者地址
+    */
+    function setSourceSender(address _sourceSender) public onlyOwner_ {
+        sourceSender = _sourceSender;
+    }
+
+    /**
      * 处理接收到的跨链数据，
      * 这里接收源链发送过来的NFT的ID和新所有者地址，并在目标链上铸造新的NFT。
      * @param any2EvmMessage 接收到的跨链消息，包含了源链发送的NFT的ID和新所有者地址。
@@ -217,17 +224,17 @@ contract NFTPoolBurnAndMint is CCIPReceiver, OwnerIsCreator {
     function _ccipReceive(
         Client.Any2EVMMessage memory any2EvmMessage
     ) internal override {
-//        // Step 1：确认来自指定源链
-//
-//        console.log("The received source chain Selector", any2EvmMessage.sourceChainSelector);
-//        console.log("The init Chain Selector", sourceChainSelector);
-//        require(any2EvmMessage.sourceChainSelector == sourceChainSelector, "Invalid source chain");
-//
-//        // Step 2：确认是源链合约发的
-//        address decodedSender = abi.decode(any2EvmMessage.sender, (address));
-//        console.log("The received source chain address", decodedSender);
-//        console.log("The init Chain address", sourceSender);
-//        require(abi.decode(any2EvmMessage.sender, (address)) == sourceSender, "Invalid sender");
+        // Step 1：确认来自指定源链
+
+        console.log("The received source chain Selector", any2EvmMessage.sourceChainSelector);
+        console.log("The init Chain Selector", sourceChainSelector);
+        require(any2EvmMessage.sourceChainSelector == sourceChainSelector, "Invalid source chain");
+
+        // Step 2：确认是源链合约发的
+        address decodedSender = abi.decode(any2EvmMessage.sender, (address));
+        console.log("The received source chain address", decodedSender);
+        console.log("The init Chain address", sourceSender);
+        require(abi.decode(any2EvmMessage.sender, (address)) == sourceSender, "Invalid sender");
         // 获取NFTPoolLockAndRelease发送过来的NFT的ID和新所有者地址
         ReceivedData memory receivedData = abi.decode(
             any2EvmMessage.data,
@@ -322,5 +329,10 @@ contract NFTPoolBurnAndMint is CCIPReceiver, OwnerIsCreator {
         if (amount == 0) revert NothingToWithdraw();
 
         IERC20(_token).safeTransfer(_beneficiary, amount);
+    }
+
+    modifier onlyOwner_() {
+        require(msg.sender == myOwner, "Not the owner");
+        _;
     }
 }

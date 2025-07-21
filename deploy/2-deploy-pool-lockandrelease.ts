@@ -1,6 +1,7 @@
 import "@nomicfoundation/hardhat-toolbox";
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
+import networkConfig from "../helper.config";
 
 const deployPoolLockAndRelease: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const { deployments, getNamedAccounts, network } = hre;
@@ -14,12 +15,18 @@ const deployPoolLockAndRelease: DeployFunction = async (hre: HardhatRuntimeEnvir
 
     const allDeployments = await deployments.all();
     console.log("当前已部署合约:", Object.keys(allDeployments));
-
-    const cCIPLocalSimulatorDeployment = await deployments.get("CCIPLocalSimulator");
-    const cCIPLocalSimulator = await hre.ethers.getContractAt("CCIPLocalSimulator", cCIPLocalSimulatorDeployment.address);
-    const ccipConfig = await cCIPLocalSimulator.configuration();
-    const sourceChainRouter = ccipConfig.sourceRouter_;// 获取源链路由地址
-    const linkTokenAddr = ccipConfig.linkToken_;// 获取 LINK 代币地址
+    let sourceChainRouter: any;
+    let linkTokenAddr;
+    if (isLiveNetwork){
+        sourceChainRouter = networkConfig[network.name].router;
+        linkTokenAddr = networkConfig[network.name].linkToken;
+    } else {
+        const cCIPLocalSimulatorDeployment = await deployments.get("CCIPLocalSimulator");
+        const cCIPLocalSimulator = await hre.ethers.getContractAt("CCIPLocalSimulator", cCIPLocalSimulatorDeployment.address);
+        const ccipConfig = await cCIPLocalSimulator.configuration();
+        sourceChainRouter = ccipConfig.sourceRouter_;// 获取源链路由地址
+        linkTokenAddr = ccipConfig.linkToken_;// 获取 LINK 代币地址
+    }
     const nftAddress = await deployments.get("MyToken").then(deployment => deployment.address); // 获取 MyToken 合约地址
     const args = [sourceChainRouter, linkTokenAddr, nftAddress]; // 传入合约的构造函数参数
     const NFTPoolLockAndRelease = await deploy("NFTPoolLockAndRelease", {

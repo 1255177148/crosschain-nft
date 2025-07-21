@@ -14,6 +14,7 @@ const SEPOLIA_URL: any = process.env.SEPOLIA_URL;
 const PRIVATE_KEY_1: any = process.env.PRIVATE_KEY_1;
 const PRIVATE_KEY_2: any = process.env.PRIVATE_KEY_2;
 const ETHERSCAN_API_KEY: any = process.env.ETHERSCAN_API_KEY;
+const AMOY_URL: any = process.env.AMOY_URL;
 const config: HardhatUserConfig = {
   solidity: "0.8.28",
   paths: {
@@ -31,6 +32,11 @@ const config: HardhatUserConfig = {
       accounts: [PRIVATE_KEY_1, PRIVATE_KEY_2],
       chainId: 11155111, // Sepolia 的链 ID,在chainlist.org上可以找到
     },
+    amoy: {
+      url: AMOY_URL,
+      accounts: [PRIVATE_KEY_1, PRIVATE_KEY_2],
+      chainId: 80002,
+    }
   },
   mocha: {
     timeout: 400000, // 设置测试超时时间为400秒

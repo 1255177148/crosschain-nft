@@ -1,6 +1,7 @@
 import "@nomicfoundation/hardhat-toolbox";
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
+import networkConfig from "../helper.config";
 
 const deployNFTPoolBurnAndMint: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const { deployments, getNamedAccounts, network } = hre;
@@ -9,15 +10,23 @@ const deployNFTPoolBurnAndMint: DeployFunction = async (hre: HardhatRuntimeEnvir
     const isLiveNetwork =
         network.name !== "hardhat" && network.name !== "localhost";
     log("Deploying NFTPoolBurnAndMint and waiting for confirmations...");
-    const cCIPLocalSimulatorDeployment = await deployments.get("CCIPLocalSimulator");
-    const cCIPLocalSimulator = await hre.ethers.getContractAt("CCIPLocalSimulator", cCIPLocalSimulatorDeployment.address);
-    const ccipConfig = await cCIPLocalSimulator.configuration();
-    const destinationRouter = ccipConfig.destinationRouter_;// 获取目的链路由地址
-    const linkTokenAddr = ccipConfig.linkToken_;// 获取 LINK 代币地址
+    let chainSelector;
+    let destinationRouter;
+    let linkTokenAddr;
+    if (isLiveNetwork) {
+        chainSelector = networkConfig[network.name].sourceChainSelector;
+        destinationRouter = networkConfig[network.name].router;
+        linkTokenAddr = networkConfig[network.name].linkToken;
+    } else {
+        const cCIPLocalSimulatorDeployment = await deployments.get("CCIPLocalSimulator");
+        const cCIPLocalSimulator = await hre.ethers.getContractAt("CCIPLocalSimulator", cCIPLocalSimulatorDeployment.address);
+        const ccipConfig = await cCIPLocalSimulator.configuration();
+        destinationRouter = ccipConfig.destinationRouter_;// 获取目的链路由地址
+        linkTokenAddr = ccipConfig.linkToken_;// 获取 LINK 代币地址
+        chainSelector = ccipConfig.chainSelector_;// 获取链选择器
+    }
     const wnftAddress = await deployments.get("WrapperMyToken").then(deployment => deployment.address); // 获取 MyToken 合约地址
-    const nftAddress = await deployments.get("NFTPoolLockAndRelease").then(deployment => deployment.address); // 获取 MyToken 合约地址
-    const chainSelector = ccipConfig.chainSelector_;// 获取链选择器
-    const args = [destinationRouter, linkTokenAddr, wnftAddress, nftAddress, chainSelector]; // 传入合约的构造函数参数
+    const args = [destinationRouter, linkTokenAddr, wnftAddress, chainSelector]; // 传入合约的构造函数参数
     const NFTPoolBurnAndMint = await deploy("NFTPoolBurnAndMint", {
         contract: "NFTPoolBurnAndMint",
         from: deployer,
@@ -36,5 +45,5 @@ const deployNFTPoolBurnAndMint: DeployFunction = async (hre: HardhatRuntimeEnvir
         console.log(`Contract verified on ${network.name}`);
     }
 };
-deployNFTPoolBurnAndMint.tags = ["sourceChain", "NFTPoolBurnAndMint", "all"];
+deployNFTPoolBurnAndMint.tags = ["destinationChain", "NFTPoolBurnAndMint", "all"];
 export default deployNFTPoolBurnAndMint;

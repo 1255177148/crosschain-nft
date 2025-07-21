@@ -59,6 +59,7 @@ describe(
             await ccipLocalSimulator.requestLinkFromFaucet(nftPoolLockAndRelease, ethers.parseEther("10"));
             // 加上白名单，只有白名单里的地址才能mint一个nft
             await wrapperMyToken.addToWhitelist(nftPoolBurnAndMint.target);
+            await nftPoolBurnAndMint.setSourceSender(nftPoolLockAndRelease.target);
             await nftPoolLockAndRelease.lockAndSendNFT(0, deployer, chainSelector, nftPoolBurnAndMint.target);
             const owner = await myToken.ownerOf(0);
             console.log("test");
